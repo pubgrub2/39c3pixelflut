@@ -4,13 +4,14 @@ from PIL import Image
 import random
 import threading
 
-IMAGES = ["arch-linux-logo-hexagon.png", "eyepain.png", "segelflieger.png"]
+IMAGES = ["arch-linux-logo-hexagon.png", "eyepain.png", "segelflieger.png", "segelfliegen.png"]
 HOST = "151.219.13.203"
 PORT = 1234
-IMAGEPATH = IMAGES[2]
+IMAGEPATH = IMAGES[3]
 THREADS = 10
-OFFSET_X = 00
-OFFSET_Y = 00
+OFFSET_X = 400
+OFFSET_Y = 600
+RANDOM = False
 
 def image_to_pixels(imagepath):
     img = Image.open(imagepath)
@@ -45,7 +46,10 @@ def pixels_to_instructions(pixels, offset_x, offset_y):
         r = pix[1][0]
         g = pix[1][1]
         b = pix[1][2]
-        instructions.append(f"PX {int(x) + offset_x} {int(y) + offset_y} {r:02X}{g:02X}{b:02X}\n")
+        if RANDOM:
+            instructions.append(f"PX {int(x) + offset_x} {int(y) + offset_y} {random.randint(0,255):02X}{random.randint(0,255):02X}{random.randint(0,255):02X}\n")
+        else:
+            instructions.append(f"PX {int(x) + offset_x} {int(y) + offset_y} {r:02X}{g:02X}{b:02X}\n")
 
     return "".join(instructions)
 
