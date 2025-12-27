@@ -7,6 +7,7 @@ import threading
 HOST = "151.219.13.203"
 PORT = 1234
 IMAGEPATH = "arch-linux-logo-hexagon.png"
+IMAGEPATH = "eyepain.png"
 THREADS = 10
 OFFSET_X = 800
 OFFSET_Y = 100
