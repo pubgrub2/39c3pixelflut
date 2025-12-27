@@ -1,17 +1,67 @@
 #!/usr/bin/env python3
 import socket
-from PIL import Image
 import random
 import threading
+import struct
+import version_1_pb2 as pb
 
-IMAGES = ["arch-linux-logo-hexagon.png", "eyepain.png", "segelflieger.png", "segelfliegen.png"]
-HOST = "151.219.13.203"
-PORT = 1234
-IMAGEPATH = IMAGES[3]
+CM_HOST = "151.219.13.224"
+CM_PORT = 12345
 THREADS = 10
-OFFSET_X = 400
-OFFSET_Y = 600
-RANDOM = False
+OFFSET_X = 00
+OFFSET_Y = 00
+
+def recv_exact(sock, n):
+    buf = bytearray()
+    while len(buf) < n:
+        chunk = sock.recv(n - len(buf))
+        if not chunk:
+            return None
+        buf.extend(chunk)
+    return bytes(buf)
+
+def read_msg(socket):
+    raw_len = recv_exact(socket, 2)
+    if not raw_len:
+        return None
+    
+    msg_len = struct.unpack('>H', raw_len)[0]
+
+    data = recv_exact(socket, msg_len)
+    if not data:
+        return None
+
+    msg = pb.Envelope()
+    try:
+        msg.ParseFromString(data)
+        return msg
+    except Exception:
+        return None
+
+def get_server(socket):
+    msg = read_msg(socket)
+    connect_to = msg.connect_to
+    host = connect_to.host
+    port = connect_to.port
+    return host, port
+
+def get_pixels(socket):
+    pixels = []
+    while True:
+        msg = read_msg(socket)
+        if msg is None:
+            break
+        add_pixel = msg.add_pixel
+        x = add_pixel.x_cord
+        y = add_pixel.y_cord
+        cords = (x, y)
+        color = add_pixel.color
+        r = (color >> 16) & 0xFF
+        g = (color >> 8) & 0xFF
+        b = color & 0xFF
+        col = (r, g, b)
+        pixels.append((cords, col))
+    return pixels
 
 def image_to_pixels(imagepath):
     img = Image.open(imagepath)
@@ -25,8 +75,8 @@ def image_to_pixels(imagepath):
         
     return pixels
 
-def image_to_shuffled(imagepath):
-    pixels = image_to_pixels(imagepath)
+def image_to_shuffled(socket):
+    pixels = get_pixels(socket)
     random.shuffle(pixels)
     return pixels
 
@@ -46,29 +96,32 @@ def pixels_to_instructions(pixels, offset_x, offset_y):
         r = pix[1][0]
         g = pix[1][1]
         b = pix[1][2]
-        if RANDOM:
-            instructions.append(f"PX {int(x) + offset_x} {int(y) + offset_y} {random.randint(0,255):02X}{random.randint(0,255):02X}{random.randint(0,255):02X}\n")
-        else:
-            instructions.append(f"PX {int(x) + offset_x} {int(y) + offset_y} {r:02X}{g:02X}{b:02X}\n")
+        instructions.append(f"PX {int(x) + offset_x} {int(y) + offset_y} {r:02X}{g:02X}{b:02X}\n")
 
     return "".join(instructions)
 
 def looped_send(host, port, instructions):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((host, port))
-        while True:
-            s.sendall(instructions.encode("utf-8"))
+            s.connect((host, port))
+            while True:
+                s.sendall(instructions.encode("utf-8"))
 
 def thread_main(host, port, pixels):
     instructions = pixels_to_instructions(pixels, OFFSET_X, OFFSET_Y)
     looped_send(host, port, instructions)
 
-pixelsets = split_to_sets(image_to_shuffled(IMAGEPATH), THREADS) 
 
-threads = []
+if __name__ == '__main__':
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((CM_HOST, CM_PORT))
+        host, port = get_server(s)
+    
+        pixelsets = split_to_sets(image_to_shuffled(s), THREADS) 
 
-for pxset in pixelsets:
-    threads.append(threading.Thread(target=thread_main, args=(HOST, PORT, pxset)))
+    threads = []
 
-for thread in threads:
-    thread.start()
+    for pxset in pixelsets:
+        threads.append(threading.Thread(target=thread_main, args=(host, port, pxset)))
+
+    for thread in threads:
+        thread.start()

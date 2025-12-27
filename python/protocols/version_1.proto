@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+/*
+ * IMPORTANT:
+ * for every message in the TCP-stream there needs to ba an 2-byte
+ * big-endian number specifying the length of the following message.
+ * Only the "Envolope" message is allowed to be directly send on the
+ * TCP-stream. Every other message MUST be transmitted via "Envolope".
+ */
+
+
+// to identify the diferrent messages
+message Envelope {
+  oneof payload {
+    ConnectTo connect_to = 1;
+    AddPixel add_pixel = 2;
+    DeletePixel delete_pixel = 3;
+  }
+}
+
+// on connection with a new client
+message ConnectTo {
+  string host = 1;
+  uint32 port = 2;
+}
+
+// add a pixel to flood with the following values to the buffer
+message AddPixel {
+  uint32 x_cord = 1;
+  uint32 y_cord = 2;
+  fixed32 color = 3; // argb color code
+}
+
+// delete all pixels to flood at this location
+message DeletePixel {
+  uint32 x_cord = 1;
+  uint32 y_cord = 2;
+}
