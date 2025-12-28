@@ -9,8 +9,8 @@ HOST = "151.219.13.203"
 PORT = 1234
 IMAGEPATH = IMAGES[0]
 THREADS = 10
-OFFSET_X = 1600
-OFFSET_Y = 830
+OFFSET_X = 800
+OFFSET_Y = 200
 MODIFIER = ""
 
 def image_to_pixels(imagepath):
