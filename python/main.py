@@ -7,11 +7,11 @@ import threading
 IMAGES = ["arch-linux-logo-hexagon.png", "eyepain.png", "segelflieger.png", "segelfliegen.png", "doge.jpg", "archpilled.jpg"]
 HOST = "151.219.13.203"
 PORT = 1234
-IMAGEPATH = IMAGES[3]
+IMAGEPATH = IMAGES[0]
 THREADS = 10
 OFFSET_X = 1600
 OFFSET_Y = 830
-MODIFIER = "dark"
+MODIFIER = ""
 
 def image_to_pixels(imagepath):
     img = Image.open(imagepath)
